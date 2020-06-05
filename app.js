@@ -1,165 +1,78 @@
-// Define UI Vars
-const form = document.querySelector("#task-form");
-const taskList = document.querySelector(".collection");
-const clearBtn = document.querySelector(".clear-tasks");
-const filter = document.querySelector("#filter");
-const taskInput = document.querySelector("#task");
+// Listen for submit
 
-// Load all event listeners
-loadEventListeners();
+document.getElementById("loan-form").addEventListener("submit", function (e) {
+  // Hide results
+  document.getElementById("results").style.display = "none";
 
-// Load all event listeners
-function loadEventListeners() {
-  // DOM Load event
-  document.addEventListener("DOMContentLoaded", getTasks);
-  // Add task event
-  form.addEventListener("submit", addTask);
-  // Remove task event
-  taskList.addEventListener("click", removeTask);
-  // Clear Task event
-  clearBtn.addEventListener("click", clearTasks);
-  // Filter tasks event
-  filter.addEventListener("keyup", filterTasks);
-}
+  // Show loading
+  document.getElementById("loading").style.display = "block";
 
-// Get Tasks from LS
-function getTasks() {
-  let tasks;
-  if (localStorage.getItem("tasks") === null) {
-    tasks = [];
-  } else {
-    tasks = JSON.parse(localStorage.getItem("tasks"));
-  }
-
-  tasks.forEach(function (task) {
-    //Create li element
-    const li = document.createElement("li");
-    // Add class
-    li.className = "collection-item";
-    // Create text node and append to li
-    li.appendChild(document.createTextNode(task));
-    // Create new link element
-    const link = document.createElement("a");
-    // Add class
-    link.className = "delete-item secondary-content";
-    // Add icon HTML
-    link.innerHTML = "<i class='fa fa-remove'></i>";
-    // Append the link to li
-    li.appendChild(link);
-    // Append li to ul
-    taskList.appendChild(li);
-  });
-}
-
-// Add Task
-
-function addTask(e) {
-  //Create li element
-  const li = document.createElement("li");
-  // Add class
-  li.className = "collection-item";
-  // Create text node and append to li
-  li.appendChild(document.createTextNode(taskInput.value));
-  // Create new link element
-  const link = document.createElement("a");
-  // Add class
-  link.className = "delete-item secondary-content";
-  // Add icon HTML
-  link.innerHTML = "<i class='fa fa-remove'></i>";
-
-  if (taskInput.value === "") {
-    alert("Add a task");
-  } else {
-    li.appendChild(link);
-
-    // Append li to ul
-    taskList.appendChild(li);
-  }
-
-  // Store in LS
-  storeTaskInLocalStorage(taskInput.value);
-
-  // Clear input
-  taskInput.value = "";
-
-  console.log(li);
+  setTimeout(calculateResults, 700);
 
   e.preventDefault();
-}
+});
 
-// Store Task
-function storeTaskInLocalStorage(task) {
-  let tasks;
-  if (localStorage.getItem("tasks") === null) {
-    tasks = [];
+// Calculate Results
+function calculateResults() {
+  console.log("Calculating...");
+  // UI Vars
+  const amount = document.getElementById("amount");
+  const interest = document.getElementById("interest");
+  const years = document.getElementById("years");
+  const monthlyPayment = document.getElementById("monthly-payment");
+  const totalPayment = document.getElementById("total-payment");
+  const totalInterest = document.getElementById("total-interest");
+
+  const principal = parseFloat(amount.value);
+  const calculatedInterest = parseFloat(interest.value) / 100 / 12;
+  const calculatedPayments = parseFloat(years.value) * 12;
+
+  // Compute monthly payment
+  const x = Math.pow(1 + calculatedInterest, calculatedPayments);
+  const monthly = (principal * x * calculatedInterest) / (x - 1);
+
+  if (isFinite(monthly)) {
+    monthlyPayment.value = monthly.toFixed(3);
+    totalPayment.value = (monthly * calculatedPayments).toFixed(3);
+    totalInterest.value = (monthly * calculatedPayments - principal).toFixed(2);
+
+    // Show results
+    document.getElementById("results").style.display = "block";
+
+    // Hide loader
+    document.getElementById("loading").style.display = "none";
   } else {
-    tasks = JSON.parse(localStorage.getItem("tasks"));
-  }
-
-  tasks.push(task);
-
-  localStorage.setItem("tasks", JSON.stringify(tasks));
-}
-
-// Remove Task
-function removeTask(e) {
-  if (e.target.parentElement.classList.contains("delete-item")) {
-    if (confirm("Are you Sure?")) {
-      e.target.parentElement.parentElement.remove();
-
-      //Remove from LS
-      removeTaskFromLocalStorage(e.target.parentElement.parentElement);
-    }
+    showError("Please check your numbers");
   }
 }
 
-// Remove from LS
-function removeTaskFromLocalStorage(taskItem) {
-  let tasks;
-  if (localStorage.getItem("tasks") === null) {
-    tasks = [];
-  } else {
-    tasks = JSON.parse(localStorage.getItem("tasks"));
-  }
+// Show Error
+function showError(error) {
+  // Hide results
+  document.getElementById("results").style.display = "none";
 
-  tasks.forEach(function (task, index) {
-    if (taskItem.textContent === task) {
-      tasks.splice(index, 1);
-    }
-  });
+  // Hide loader
+  document.getElementById("loading").style.display = "none"; // Create a div
+  const errorDiv = document.createElement("div");
 
-  localStorage.setItem("tasks", JSON.stringify(tasks));
+  // Get elements
+  const card = document.querySelector(".card");
+  const heading = document.querySelector(".heading");
+
+  // Add class
+  errorDiv.className = "alert alert-danger";
+
+  // Create text node and append to div
+  errorDiv.appendChild(document.createTextNode(error));
+
+  // Insert error above heading
+  card.insertBefore(errorDiv, heading);
+
+  // Clear error after 3 seconds
+  setTimeout(clearError, 3000);
 }
 
-// Clear Tasks
-function clearTasks(e) {
-  if (confirm("Are you Sure?")) {
-    while (taskList.firstChild) {
-      taskList.removeChild(taskList.firstChild);
-    }
-  }
-
-  // Clear from LS
-  clearTasksFromLocalStorage();
-}
-
-// Clear Tasks from LS
-function clearTasksFromLocalStorage() {
-  localStorage.clear();
-}
-
-// Filter Tasks
-function filterTasks(e) {
-  const text = e.target.value.toLowerCase();
-
-  document.querySelectorAll(".collection-item").forEach(function (task) {
-    const item = task.firstChild.textContent;
-    if (item.toLowerCase().indexOf(text) != -1) {
-      task.style.display = "block";
-    } else {
-      task.style.display = "none";
-    }
-  });
-
-  console.log(text);
+// Clear error
+function clearError() {
+  document.querySelector(".alert").remove();
 }
